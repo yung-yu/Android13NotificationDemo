@@ -1,6 +1,7 @@
 package org.andy.android13notificationdemo
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -22,10 +23,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat.startActivity
 import org.andy.android13notificationdemo.ui.theme.Android13NotificationDemoTheme
 
 
@@ -33,24 +34,9 @@ class MainActivity : ComponentActivity() {
 
 	private val permissionLaunch = registerForActivityResult(ActivityResultContracts.RequestPermission()){
 		if(it){
-			val channed  = NotificationChannelCompat.Builder("test", NotificationCompat.PRIORITY_HIGH)
-				.setName("demo notification")
-				.build()
-			val notificationManagerCompat = NotificationManagerCompat.from(this)
-			notificationManagerCompat.createNotificationChannel(channed)
-			val pendingIntent = PendingIntent.getActivity(this, 0,
-				Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE);
-
-			val sendNotificationCompat = NotificationCompat.Builder(this, "test")
-				.setPriority(NotificationCompat.PRIORITY_HIGH)
-				.setDefaults(NotificationCompat.DEFAULT_ALL)
-				.setSmallIcon(R.drawable.ic_stat_name)
-				.setContentTitle("hello world")
-				.setContentText("大家好！！")
-				.setFullScreenIntent(pendingIntent, true)
-				.build()
-			notificationManagerCompat.notify(1,sendNotificationCompat)
+			sendNotification(this)
 		} else {
+
 			vm.showDialog("請開啟通知權限")
 		}
 	}
@@ -67,7 +53,8 @@ class MainActivity : ComponentActivity() {
 					modifier = Modifier.fillMaxSize(),
 					color = MaterialTheme.colors.background
 				) {
-					Demo("Android", permissionLaunch)
+					Demo( permissionLaunch)
+
 					PermissionAlertDialog(show = showDialogState.second,
 						text = showDialogState.first,
 						onDismiss = { vm.onDismissClick() },
@@ -107,11 +94,53 @@ fun PermissionAlertDialog(show:Boolean,text: String,
 			text = { Text(text = text) })
 	}
 }
+fun sendNotification(context: Context){
+	val notificationManagerCompat = NotificationManagerCompat.from(context)
+	val channel  = NotificationChannelCompat.Builder("test", NotificationCompat.PRIORITY_HIGH)
+		.setName("demo notification")
+		.build()
 
+	notificationManagerCompat.createNotificationChannel(channel)
+	val channel2  = NotificationChannelCompat.Builder("test2", NotificationCompat.PRIORITY_HIGH)
+		.setName("demo notification 2")
+		.build()
+	notificationManagerCompat.createNotificationChannel(channel2)
+	val channel3  = NotificationChannelCompat.Builder("test3", NotificationCompat.PRIORITY_HIGH)
+		.setName("demo notification 3")
+		.build()
+	notificationManagerCompat.createNotificationChannel(channel3)
+	val pendingIntent = PendingIntent.getActivity(context, 0,
+		Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE);
+
+	notificationManagerCompat.notify(1,NotificationCompat.Builder(context, "test")
+		.setPriority(NotificationCompat.PRIORITY_HIGH)
+		.setDefaults(NotificationCompat.DEFAULT_ALL)
+		.setSmallIcon(R.drawable.ic_stat_name)
+		.setContentTitle("test1")
+		.setContentText("大家好！！")
+		.setFullScreenIntent(pendingIntent, true)
+		.build())
+	notificationManagerCompat.notify(2,NotificationCompat.Builder(context, "test2")
+		.setPriority(NotificationCompat.PRIORITY_HIGH)
+		.setDefaults(NotificationCompat.DEFAULT_ALL)
+		.setSmallIcon(R.drawable.ic_stat_name)
+		.setContentTitle("test2")
+		.setContentText("大家好！！")
+		.setFullScreenIntent(pendingIntent, true)
+		.build())
+	notificationManagerCompat.notify(3,NotificationCompat.Builder(context, "test3")
+		.setPriority(NotificationCompat.PRIORITY_HIGH)
+		.setDefaults(NotificationCompat.DEFAULT_ALL)
+		.setSmallIcon(R.drawable.ic_stat_name)
+		.setContentTitle("test3")
+		.setContentText("大家好！！")
+		.setFullScreenIntent(pendingIntent, true)
+		.build())
+}
 @Composable
-fun Demo(name: String, permissionLaunch: ActivityResultLauncher<String>? = null) {
+fun Demo( permissionLaunch: ActivityResultLauncher<String>? = null) {
 	val context = LocalContext.current
-	val activity = LocalActivityResultRegistryOwner.current
+
 	Button(
 		modifier = Modifier
 			.wrapContentWidth()
@@ -121,23 +150,7 @@ fun Demo(name: String, permissionLaunch: ActivityResultLauncher<String>? = null)
 				permissionLaunch?.launch(android.Manifest.permission.POST_NOTIFICATIONS)
 
 			} else {
-				val channed  = NotificationChannelCompat.Builder("test", NotificationCompat.PRIORITY_HIGH)
-					.setName("demo notification")
-					.build()
-				val notificationManagerCompat = NotificationManagerCompat.from(context)
-				notificationManagerCompat.createNotificationChannel(channed)
-				val pendingIntent = PendingIntent.getActivity(context, 0,
-				Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE);
-
-				val sendNotificationCompat = NotificationCompat.Builder(context, "test")
-					.setPriority(NotificationCompat.PRIORITY_HIGH)
-					.setDefaults(NotificationCompat.DEFAULT_ALL)
-					.setSmallIcon(R.drawable.ic_stat_name)
-					.setContentTitle("hello world")
-					.setContentText("大家好！！")
-					.setFullScreenIntent(pendingIntent, true)
-					.build()
-				notificationManagerCompat.notify(1,sendNotificationCompat)
+				sendNotification(context)
 			}
 		}) {
 		Text(text = "send Notification!")
@@ -148,6 +161,6 @@ fun Demo(name: String, permissionLaunch: ActivityResultLauncher<String>? = null)
 @Composable
 fun DefaultPreview() {
 	Android13NotificationDemoTheme {
-		Demo("Android")
+		Demo()
 	}
 }
