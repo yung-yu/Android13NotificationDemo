@@ -47,7 +47,6 @@ class MainActivity : ComponentActivity() {
 		setContent {
 
 			Android13NotificationDemoTheme {
-				// A surface container using the 'background' color from the theme
 				val showDialogState: Pair<String, Boolean> by vm.showDialog.collectAsState()
 				Surface(
 					modifier = Modifier.fillMaxSize(),
