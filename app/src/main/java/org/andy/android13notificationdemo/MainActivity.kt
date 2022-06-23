@@ -13,9 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
@@ -36,23 +35,23 @@ class MainActivity : ComponentActivity() {
 		if(it){
 			sendNotification(this)
 		} else {
-
 			vm.showDialog("請開啟通知權限")
 		}
+		vm.checkPermission(this)
 	}
 	private val vm:MainViewModel by viewModels<MainViewModel>()
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		vm.checkPermission(this)
 		setContent {
-
 			Android13NotificationDemoTheme {
 				val showDialogState: Pair<String, Boolean> by vm.showDialog.collectAsState()
 				Surface(
 					modifier = Modifier.fillMaxSize(),
 					color = MaterialTheme.colors.background
 				) {
-					Demo( permissionLaunch)
+					Demo( vm, permissionLaunch)
 
 					PermissionAlertDialog(show = showDialogState.second,
 						text = showDialogState.first,
@@ -137,8 +136,15 @@ fun sendNotification(context: Context){
 		.build())
 }
 @Composable
-fun Demo( permissionLaunch: ActivityResultLauncher<String>? = null) {
+fun Demo(vm: MainViewModel? = null,  permissionLaunch: ActivityResultLauncher<String>? = null) {
 	val context = LocalContext.current
+	Column(modifier = Modifier
+		.wrapContentWidth()
+		.wrapContentHeight()){
+		vm?.let {
+			val enable:Pair<Boolean, Boolean>  by vm.enableNotification.collectAsState()
+			Text(text = "Notification status: ${enable.first} ${enable.second}")
+		}
 
 	Button(
 		modifier = Modifier
@@ -147,12 +153,23 @@ fun Demo( permissionLaunch: ActivityResultLauncher<String>? = null) {
 		onClick = {
 			if (Build.VERSION.SDK_INT >= 33) {
 				permissionLaunch?.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-
 			} else {
 				sendNotification(context)
 			}
 		}) {
-		Text(text = "send Notification!")
+			Text(text = "send!")
+		}
+		Spacer(modifier = Modifier.width(16.dp))
+		Button(
+			modifier = Modifier
+				.wrapContentWidth()
+				.wrapContentHeight(),
+			onClick = {
+				sendNotification(context)
+			}) {
+			Text(text = "no permission check sned!")
+		}
+
 	}
 }
 
