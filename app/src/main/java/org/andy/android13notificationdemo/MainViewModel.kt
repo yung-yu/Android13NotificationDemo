@@ -11,18 +11,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class MainViewModel:ViewModel() {
-	private val _showDialog = MutableStateFlow(Pair("", false))
-	val showDialog: StateFlow<Pair<String, Boolean>> = _showDialog.asStateFlow()
+	private val _showDialog = MutableStateFlow(Triple("", false, Runnable { }))
+	val showDialog: StateFlow<Triple<String, Boolean, Runnable>> = _showDialog.asStateFlow()
 
-	fun showDialog(text:String){
-		_showDialog.value = Pair(text, true)
+	fun showDialog(text:String, doEvent:Runnable){
+		_showDialog.value = Triple(text, true, doEvent)
 	}
 
 	fun onConfirmClick(){
-		_showDialog.value = Pair("", false)
+		_showDialog.value = Triple("", false, Runnable {  })
 	}
 	fun onDismissClick(){
-		_showDialog.value = Pair("", false)
+		_showDialog.value = Triple("", false, Runnable {  })
 	}
 
 	private val _enableNotification = MutableStateFlow(Pair(false, false))
