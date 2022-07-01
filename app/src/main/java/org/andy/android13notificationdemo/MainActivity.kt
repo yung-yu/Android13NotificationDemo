@@ -4,8 +4,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,14 +25,24 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import org.andy.android13notificationdemo.ui.theme.Android13NotificationDemoTheme
 
 
 class MainActivity : ComponentActivity() {
 
-	private val permissionLaunch = registerForActivityResult(ActivityResultContracts.RequestPermission()){
-		if(it){
-			createNotificationChannel()
+	val permissionLaunch = registerForActivityResult(ActivityResultContracts.RequestPermission()){
+		if(!it&&!this.shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS)){
+			android.app.AlertDialog.Builder(this)
+				.setTitle(R.string.app_name)
+				.setMessage("前往設定通知權限")
+				.setCancelable(false)
+				.setPositiveButton("ok"){ _,_ ->
+					val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+					val uri: Uri = Uri.fromParts("package", this.packageName, null)
+					intent.data = uri
+					this.startActivity(intent)
+				}.create().show()
 		}
 		vm.checkPermission(this)
 	}
@@ -38,38 +50,21 @@ class MainActivity : ComponentActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		vm.checkPermission(this)
+		createNotificationChannel()
 		setContent {
 			Android13NotificationDemoTheme {
-				val showDialogState: Triple<String, Boolean, Runnable> by vm.showDialog.collectAsState()
 				Surface(
 					modifier = Modifier.fillMaxSize(),
 					color = MaterialTheme.colors.background
 				) {
-					Demo(vm)
-					AlertDialog(show = showDialogState.second,
-						text = showDialogState.first,
-						onDismiss = { vm.onDismissClick() },
-						onConfirm = { vm.onConfirmClick() },
-						runnable = showDialogState.third)
+					Demo(this, vm)
 				}
 			}
 		}
-		if(Build.VERSION.SDK_INT >= 33) {
-			if(checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED){
-				if(shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS)){
-					vm.showDialog("提示通知權限權限才能發通知", Runnable {
-						permissionLaunch.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-					})
-				} else{
-					permissionLaunch.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-				}
-			} else {
-				createNotificationChannel()
-			}
-		} else {
-			createNotificationChannel()
-		}
+	}
+
+	override fun onStart() {
+		super.onStart()
 		vm.checkPermission(this)
 	}
 
@@ -84,34 +79,7 @@ class MainActivity : ComponentActivity() {
 	}
 
 }
-@Composable
-fun AlertDialog(show:Boolean,text: String,
-						  onDismiss: () -> Unit,
-						  onConfirm: () -> Unit,
-							runnable: Runnable) {
-	if(show) {
-		val context = LocalContext.current
-		AlertDialog(
-			onDismissRequest = {},
-			confirmButton = {
-				TextButton(onClick = {
-					runnable.run()
-					onConfirm.invoke()
-				}) {
-					Text("ok")
-				}
-			},
-			dismissButton = {
-				TextButton(onClick = {
-					onDismiss.invoke()
-				}) {
-					Text("cancel")
-				}
-			},
-			title = { Text(text = context.getString(R.string.app_name)) },
-			text = { Text(text = text) })
-	}
-}
+
 
 fun sendNotification(context: Context){
 	val notificationManagerCompat = NotificationManagerCompat.from(context)
@@ -128,38 +96,41 @@ fun sendNotification(context: Context){
 		.build())
 }
 @Composable
-fun Demo(vm: MainViewModel? = null) {
+fun Demo(activity: MainActivity, mainViewModel: MainViewModel) {
 	val context = LocalContext.current
-	Column(modifier = Modifier
-		.wrapContentWidth()
-		.wrapContentHeight()){
-		vm?.let {
-			val enable:Pair<Boolean, Boolean>  by vm.enableNotification.collectAsState()
-			Text(text = "Notification status: ${enable.first} ${enable.second}")
-		}
-
-	Button(
+	Column(
 		modifier = Modifier
 			.wrapContentWidth()
-			.wrapContentHeight(),
-		onClick = {
-			val notificationManagerCompat = NotificationManagerCompat.from(context)
-			if(notificationManagerCompat.areNotificationsEnabled()){
-				sendNotification(context)
-			}
+			.wrapContentHeight()
+	) {
 
-		}) {
-			Text(text = "send!")
-		}
-		Spacer(modifier = Modifier.width(16.dp))
-		Button(
-			modifier = Modifier
-				.wrapContentWidth()
-				.wrapContentHeight(),
-			onClick = {
-				sendNotification(context)
-			}) {
-			Text(text = "no permission check sned!")
+		val isGanted:Boolean by mainViewModel.permission.collectAsState()
+		Text(text = "Notification Permission: isGanted")
+		if (isGanted) {
+			Button(
+				modifier = Modifier
+					.wrapContentWidth()
+					.wrapContentHeight(),
+				onClick = {
+					val notificationManagerCompat = NotificationManagerCompat.from(context)
+					if (notificationManagerCompat.areNotificationsEnabled()) {
+						sendNotification(context)
+					}
+
+				}) {
+				Text(text = "send!")
+			}
+		} else  {
+			Text(text = "提示：\n顯示通知需要使用通知權限")
+			Button(
+				modifier = Modifier
+					.wrapContentWidth()
+					.wrapContentHeight(),
+				onClick = {
+					activity.permissionLaunch.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+				}) {
+				Text(text = "取得權限")
+			}
 		}
 
 	}
@@ -169,6 +140,6 @@ fun Demo(vm: MainViewModel? = null) {
 @Composable
 fun DefaultPreview() {
 	Android13NotificationDemoTheme {
-		Demo()
+		//Demo()
 	}
 }
