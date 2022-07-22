@@ -47,6 +47,7 @@ class DemoService: Service() {
 					.setFullScreenIntent(pendingIntent, true)
 					.build()
 				NotificationManagerCompat.from(this@DemoService).notify(222, notification)
+				Log.d(TAG, "現在時間 ${SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS").format(Date())}")
 			}
 		},0,1000)
 		return super.onStartCommand(intent, flags, startId)
@@ -60,5 +61,8 @@ class DemoService: Service() {
 
 	override fun onBind(p0: Intent?): IBinder? {
 		return null
+	}
+	private companion object{
+		private const val TAG = "DemoService"
 	}
 }

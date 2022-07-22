@@ -32,18 +32,6 @@ import org.andy.android13notificationdemo.ui.theme.Android13NotificationDemoThem
 class MainActivity : ComponentActivity() {
 
 	val permissionLaunch = registerForActivityResult(ActivityResultContracts.RequestPermission()){
-		if(!it&&!this.shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS)){
-			android.app.AlertDialog.Builder(this)
-				.setTitle(R.string.app_name)
-				.setMessage("前往設定通知權限")
-				.setCancelable(false)
-				.setPositiveButton("ok"){ _,_ ->
-					val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-					val uri: Uri = Uri.fromParts("package", this.packageName, null)
-					intent.data = uri
-					this.startActivity(intent)
-				}.create().show()
-		}
 		vm.checkPermission(this)
 	}
 	private val vm:MainViewModel by viewModels<MainViewModel>()
@@ -61,6 +49,9 @@ class MainActivity : ComponentActivity() {
 				}
 			}
 		}
+//		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//			startForegroundService(Intent(this, DemoService::class.java))
+//		}
 	}
 
 	override fun onStart() {
@@ -105,7 +96,7 @@ fun Demo(activity: MainActivity, mainViewModel: MainViewModel) {
 	) {
 
 		val isGanted:Boolean by mainViewModel.permission.collectAsState()
-		Text(text = "Notification Permission: isGanted")
+		Text(text = "Notification Permission: $isGanted")
 		if (isGanted) {
 			Button(
 				modifier = Modifier
@@ -127,6 +118,14 @@ fun Demo(activity: MainActivity, mainViewModel: MainViewModel) {
 					.wrapContentWidth()
 					.wrapContentHeight(),
 				onClick = {
+					if(activity.shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS)){
+						android.app.AlertDialog.Builder(activity)
+							.setMessage("要發起通知需要通知權限")
+							.setPositiveButton("ok"){_,_ ->
+								activity.permissionLaunch.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+							}.create().show()
+						return@Button
+					}
 					activity.permissionLaunch.launch(android.Manifest.permission.POST_NOTIFICATIONS)
 				}) {
 				Text(text = "取得權限")
